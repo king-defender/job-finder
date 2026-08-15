@@ -1,4 +1,5 @@
-import { BadRequestException, Body, Controller, Get, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Job } from '@job-agent/shared';
 import { JobsService, CreateJobResult, JobWithScore } from './jobs.service';
 import type { CreateJobDto } from './dto/create-job.dto';
 
@@ -20,5 +21,10 @@ export class JobsController {
   @Get()
   listJobs(): Promise<JobWithScore[]> {
     return this.jobsService.listJobsRanked();
+  }
+
+  @Get(':id')
+  getJob(@Param('id') id: string): Promise<Job> {
+    return this.jobsService.getJobById(id);
   }
 }

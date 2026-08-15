@@ -206,13 +206,39 @@ separate code paths:
   verification against a real Ollama instance, since scoring quality depends
   entirely on the JD parser's actual output, not just the code compiling.
 
-### Phase 3 — Browser Application Agent
-- Playwright persistent-context session (manual login, agent reuses session)
-- Generic form-engine: DOM + a11y tree → field meaning → profile mapping
-- Autofill + resume upload on a real ATS (start with Greenhouse — most
-  standardized DOM)
-- Application record written on every attempt
-- **Exit criteria**: agent correctly fills a real Greenhouse application end-to-end in Copilot mode.
+### Phase 3 — Browser Application Agent — scaffolded, pending real-machine verification
+- Playwright persistent-context session (manual login, agent reuses session);
+  one long-lived context per worker process, each apply-run gets its own tab
+  rather than its own context — a persistent context locks its user-data-dir,
+  so a second one on the same dir fails to launch while a prior run's browser
+  is still open for review
+- Generic form-engine: DOM walk → field label detection → deterministic
+  green/yellow/red classification (keyword rules, not an LLM call — same
+  principle as the Red-question policy in §2) → profile mapping → fill
+- Text-like fields only (text/email/tel/textarea/file) are auto-filled;
+  select/checkbox/radio are deliberately left for the human — answering those
+  correctly needs the actual option set, which is a harder, separate problem
+  not tackled yet
+- ATS detection (`ats-adapters`) is URL-pattern-only for now, used for
+  reporting (`Application.atsDetected`), not to scope field detection — no
+  adapter-specific selector has been verified against a real posting yet, and
+  a guessed one that doesn't match would silently return zero fields, which
+  is worse than scanning the whole page
+- `apps/worker`: BullMQ consumer, talks to `apps/api` over HTTP for Job/
+  Profile reads and Application writes rather than touching Mongo directly —
+  keeps `apps/api` as the single owner of persistence
+- Application record written on every attempt, including failures (status
+  `failed` with `errorMessage`) and successful-but-incomplete fills (status
+  `needs_review` with `unmappedFields`) — a run that only partly fills the
+  form still leaves useful state, not silence
+- **Exit criteria**: agent correctly fills a real Greenhouse application
+  end-to-end in Copilot mode. Not yet verified — this was built on a machine
+  without Playwright's browser binaries installed (`npx playwright install
+  chromium` is a real file download, deliberately left as a 2nd-system setup
+  step rather than run here — see README). Code compiles and the queue/API
+  wiring is exercised by typecheck and Nest/Next builds, but the actual
+  DOM-walk field detection and fill logic have not been run against a live
+  page of any kind yet.
 
 ### Phase 4 — Human-in-the-loop
 - Missing-info modal (blocks fill, waits for your answer)

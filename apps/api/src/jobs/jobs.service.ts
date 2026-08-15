@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 import { parseJobDescription } from '@job-agent/jd-parser';
 import { scoreJob } from '@job-agent/job-matcher';
 import { computeDedupKey, CreateJobResult, Job, JobWithScore } from '@job-agent/shared';
@@ -85,6 +85,17 @@ export class JobsService {
     const job = toJob(created);
     const profile = await this.profileService.getProfile();
     return { job, score: scoreJob(profile, job), duplicate: false };
+  }
+
+  async getJobById(id: string): Promise<Job> {
+    if (!isValidObjectId(id)) {
+      throw new NotFoundException(`Job ${id} not found.`);
+    }
+    const doc = await this.jobModel.findById(id);
+    if (!doc) {
+      throw new NotFoundException(`Job ${id} not found.`);
+    }
+    return toJob(doc);
   }
 
   /** Scores are computed fresh on every read, not cached, so they always reflect the current profile. */

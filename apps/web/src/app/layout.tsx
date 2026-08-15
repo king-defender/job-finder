@@ -28,6 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <nav className="border-b border-gray-200 px-8 py-3 flex gap-6 text-sm font-medium">
           <Link href="/">Profile</Link>
           <Link href="/jobs">Jobs</Link>
+          <Link href="/applications">Applications</Link>
         </nav>
         {children}
       </body>

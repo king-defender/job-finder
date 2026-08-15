@@ -1,4 +1,10 @@
-import type { CandidateProfile, CreateJobInput, CreateJobResult, JobWithScore } from '@job-agent/shared';
+import type {
+  Application,
+  CandidateProfile,
+  CreateJobInput,
+  CreateJobResult,
+  JobWithScore,
+} from '@job-agent/shared';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -43,4 +49,16 @@ export function createJob(input: CreateJobInput): Promise<CreateJobResult> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   }).then((res) => handle<CreateJobResult>(res));
+}
+
+export function listApplications(): Promise<Application[]> {
+  return fetch(`${API_URL}/applications`).then((res) => handle<Application[]>(res));
+}
+
+export function createApplication(jobId: string): Promise<Application> {
+  return fetch(`${API_URL}/applications`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jobId }),
+  }).then((res) => handle<Application>(res));
 }

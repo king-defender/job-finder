@@ -1,8 +1,9 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import Link from 'next/link';
 import type { CreateJobInput, JobWithScore } from '@job-agent/shared';
-import { createJob, listJobs } from '@/lib/api';
+import { createApplication, createJob, listJobs } from '@/lib/api';
 
 type Status = { kind: 'idle' } | { kind: 'busy'; label: string } | { kind: 'error'; message: string };
 
@@ -62,11 +63,16 @@ export default function JobsPage() {
 
   return (
     <main className="mx-auto max-w-3xl p-8 space-y-8">
-      <header>
-        <h1 className="text-2xl font-semibold">Jobs</h1>
-        <p className="text-sm text-gray-500">
-          Paste a job description. It gets parsed for requirements and scored against your profile.
-        </p>
+      <header className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Jobs</h1>
+          <p className="text-sm text-gray-500">
+            Paste a job description. It gets parsed for requirements and scored against your profile.
+          </p>
+        </div>
+        <Link href="/applications" className="text-sm underline text-gray-600">
+          View applications →
+        </Link>
       </header>
 
       <StatusBanner status={status} />
@@ -176,8 +182,23 @@ function TextInput({
 }
 
 function JobCard({ job, score }: { job: JobWithScore['job']; score: JobWithScore['score'] }) {
+  const [applyState, setApplyState] = useState<
+    { kind: 'idle' } | { kind: 'busy' } | { kind: 'queued' } | { kind: 'error'; message: string }
+  >({ kind: 'idle' });
+
   const badgeClass =
     score.recommendation === 'APPLY' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600';
+  const hasTarget = Boolean(job.applicationUrl || job.url);
+
+  async function handleApply() {
+    setApplyState({ kind: 'busy' });
+    try {
+      await createApplication(job.id);
+      setApplyState({ kind: 'queued' });
+    } catch (err) {
+      setApplyState({ kind: 'error', message: (err as Error).message });
+    }
+  }
 
   return (
     <article className="rounded border border-gray-200 p-4 space-y-2">
@@ -201,6 +222,29 @@ function JobCard({ job, score }: { job: JobWithScore['job']; score: JobWithScore
 
       <ScoreBreakdown score={score} />
       <p className="text-xs text-gray-500">{score.reason}</p>
+
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          onClick={handleApply}
+          disabled={!hasTarget || applyState.kind === 'busy' || applyState.kind === 'queued'}
+          title={hasTarget ? undefined : 'No posting URL on this job — add one to apply'}
+          className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+        >
+          {applyState.kind === 'queued' ? 'Queued' : 'Apply (Copilot mode)'}
+        </button>
+        {applyState.kind === 'queued' && (
+          <span className="text-xs text-gray-500">
+            The worker will open a browser and fill what it can —{' '}
+            <Link href="/applications" className="underline">
+              check applications
+            </Link>{' '}
+            for status, then review and submit yourself.
+          </span>
+        )}
+        {applyState.kind === 'error' && (
+          <span className="text-xs text-red-600">{applyState.message}</span>
+        )}
+      </div>
     </article>
   );
 }
