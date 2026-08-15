@@ -11,6 +11,9 @@ export class JobsController {
     if (!dto.title?.trim() || !dto.company?.trim() || !dto.description?.trim()) {
       throw new BadRequestException('title, company, and description are required.');
     }
+    if (dto.description.length > 20000) {
+      throw new BadRequestException('description is too long (max 20000 characters).');
+    }
     return this.jobsService.createJob(dto);
   }
 
