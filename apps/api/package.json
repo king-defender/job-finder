@@ -23,6 +23,8 @@
   "dependencies": {
     "@job-agent/shared": "*",
     "@job-agent/profile-engine": "*",
+    "@job-agent/jd-parser": "*",
+    "@job-agent/job-matcher": "*",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.1",

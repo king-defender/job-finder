@@ -31,3 +31,25 @@ export interface MatchScore {
   recommendation: "APPLY" | "SKIP";
   reason: string;
 }
+
+export interface JobWithScore {
+  job: Job;
+  score: MatchScore;
+}
+
+export interface CreateJobResult extends JobWithScore {
+  duplicate: boolean;
+}
+
+export interface CreateJobInput {
+  title: string;
+  company: string;
+  location?: string;
+  remote?: boolean;
+  salaryRange?: string | null;
+  description: string;
+  source?: string;
+  url?: string;
+  applicationUrl?: string;
+  postedDate?: string | null;
+}
