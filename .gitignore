@@ -1,0 +1,20 @@
+node_modules/
+dist/
+build/
+.next/
+*.tsbuildinfo
+
+# env files may contain machine-specific paths (e.g. USB drive letters, OLLAMA_HOST) — keep .env.example only
+.env
+.env.local
+apps/*/.env
+apps/*/.env.local
+
+# local data — Mongo/Redis volumes, uploaded resumes, Playwright browser state
+infrastructure/docker/data/
+uploads/
+.playwright-session/
+
+npm-debug.log*
+.DS_Store
+Thumbs.db
