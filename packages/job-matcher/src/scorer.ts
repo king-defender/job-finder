@@ -73,8 +73,8 @@ function scoreLocationMatch(candidate: CandidateProfile, job: Job): { score: num
     return { score: 100, note: "role is remote" };
   }
 
-  const preferred = candidate.preferences.preferredLocations;
-  if (preferred.length === 0) {
+  const preferred = candidate.preferences?.preferredLocations;
+  if (!preferred || !Array.isArray(preferred) || preferred.length === 0) {
     return { score: 50, note: "no location preference set" };
   }
 

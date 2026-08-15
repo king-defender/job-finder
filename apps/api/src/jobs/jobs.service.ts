@@ -51,21 +51,36 @@ export class JobsService {
 
     const requirements = await parseJobDescription(dto.description);
 
-    const created = await this.jobModel.create({
-      title: dto.title,
-      company: dto.company,
-      location,
-      remote: dto.remote ?? false,
-      salaryRange: dto.salaryRange ?? null,
-      description: dto.description,
-      requirements,
-      source: dto.source ?? 'manual',
-      url: dto.url ?? '',
-      applicationUrl: dto.applicationUrl ?? '',
-      postedDate: dto.postedDate ?? null,
-      dedupKey,
-      discoveredAt: new Date().toISOString(),
-    });
+    let created;
+    try {
+      created = await this.jobModel.create({
+        title: dto.title,
+        company: dto.company,
+        location,
+        remote: dto.remote ?? false,
+        salaryRange: dto.salaryRange ?? null,
+        description: dto.description,
+        requirements,
+        source: dto.source ?? 'manual',
+        url: dto.url ?? '',
+        applicationUrl: dto.applicationUrl ?? '',
+        postedDate: dto.postedDate ?? null,
+        dedupKey,
+        discoveredAt: new Date().toISOString(),
+      });
+    } catch (err: unknown) {
+      // Handle race condition: another request inserted this dedupKey between our findOne and create.
+      // E11000 is MongoDB's duplicate key error; treat it as a duplicate result.
+      if ((err as any)?.code === 11000 && (err as any)?.keyPattern?.dedupKey) {
+        const fallback = await this.jobModel.findOne({ dedupKey });
+        if (fallback) {
+          const job = toJob(fallback);
+          const profile = await this.profileService.getProfile();
+          return { job, score: scoreJob(profile, job), duplicate: true };
+        }
+      }
+      throw err;
+    }
 
     const job = toJob(created);
     const profile = await this.profileService.getProfile();
