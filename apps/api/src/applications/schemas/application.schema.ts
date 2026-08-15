@@ -35,6 +35,9 @@ export class ApplicationDocumentClass {
 
   @Prop({ default: null })
   errorMessage!: string | null;
+
+  @Prop({ default: false })
+  captchaDetected!: boolean;
 }
 
 export type ApplicationDocument = HydratedDocument<ApplicationDocumentClass>;

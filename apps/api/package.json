@@ -25,6 +25,8 @@
     "@job-agent/profile-engine": "*",
     "@job-agent/jd-parser": "*",
     "@job-agent/job-matcher": "*",
+    "@job-agent/auto-apply-policy": "*",
+    "@job-agent/tailoring": "*",
     "@job-agent/queue": "*",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.0",

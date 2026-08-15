@@ -9,7 +9,7 @@ import { DetectedField, FillPlanEntry } from "./types";
  * guessing at options generically is a harder, separate problem, deliberately
  * deferred rather than filled with a plausible-looking wrong answer.
  */
-const FILLABLE_TYPES = new Set(["text", "email", "tel", "textarea", "file"]);
+export const FILLABLE_TYPES = new Set(["text", "email", "tel", "textarea", "file"]);
 
 function resolveGreenValue(profileKey: string, label: string, profile: CandidateProfile): string | null {
   switch (profileKey) {

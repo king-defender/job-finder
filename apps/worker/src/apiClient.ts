@@ -1,4 +1,4 @@
-import { Application, ApplicationRunResult, CandidateProfile, Job } from "@job-agent/shared";
+import { AnswerMemoryEntry, Application, ApplicationRunResult, CandidateProfile, Job } from "@job-agent/shared";
 
 const API_URL = process.env.API_URL ?? "http://localhost:3001";
 
@@ -15,6 +15,14 @@ export function getJob(jobId: string): Promise<Job> {
 
 export function getProfile(): Promise<CandidateProfile> {
   return fetch(`${API_URL}/profile`).then((res) => handle<CandidateProfile>(res));
+}
+
+/** Returns null on no-match — a lookup miss is a normal outcome, not an error. */
+export async function lookupAnswer(question: string): Promise<AnswerMemoryEntry | null> {
+  const res = await fetch(`${API_URL}/answer-memory/lookup?question=${encodeURIComponent(question)}`);
+  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+  const body = (await res.json()) as AnswerMemoryEntry | null;
+  return body ?? null;
 }
 
 function patchApplication(applicationId: string, patch: unknown): Promise<Application> {

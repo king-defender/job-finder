@@ -47,6 +47,16 @@ export interface Application {
   screenshotPath: string | null;
   /** Set when a fill run throws (site structure changed, ATS unrecognized, etc). */
   errorMessage: string | null;
+  /** A CAPTCHA widget was seen on the page — the run doesn't attempt to solve it, just flags it for the human already sitting in front of the open tab. */
+  captchaDetected: boolean;
+  /**
+   * Computed at read-time (not stored) by @job-agent/auto-apply-policy —
+   * whether this application would qualify for Controlled auto-apply per
+   * PROJECT_PLAN.md §9's thresholds. Informational only: nothing in this
+   * codebase acts on it by actually submitting anything.
+   */
+  autoApplyEligible: boolean;
+  autoApplyReasons: string[];
   createdAt: string;
   updatedAt: string;
 }

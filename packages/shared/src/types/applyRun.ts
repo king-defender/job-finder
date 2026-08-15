@@ -6,6 +6,13 @@ export interface ApplyRunPayload {
   jobId: string;
 }
 
+/** Circuit-breaker status — informational, since no code path actually auto-submits yet. */
+export interface AutoApplyStatus {
+  eligibleToday: number;
+  maxPerDay: number;
+  tripped: boolean;
+}
+
 /** What the worker is allowed to update on an Application after a fill run. */
 export interface ApplicationRunResult {
   status: "needs_review" | "failed";
@@ -13,4 +20,5 @@ export interface ApplicationRunResult {
   unmappedFields: UnmappedField[];
   screenshotPath: string | null;
   errorMessage: string | null;
+  captchaDetected: boolean;
 }

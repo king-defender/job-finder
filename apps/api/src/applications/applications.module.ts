@@ -16,5 +16,6 @@ import { ApplicationDocumentClass, ApplicationSchema } from './schemas/applicati
   ],
   controllers: [ApplicationsController],
   providers: [ApplicationsService],
+  exports: [ApplicationsService],
 })
 export class ApplicationsModule {}

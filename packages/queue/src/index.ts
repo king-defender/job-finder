@@ -9,6 +9,12 @@ import IORedis from "ioredis";
 export const APPLY_RUNS_QUEUE = "apply-runs";
 
 /**
+ * Off by default — see apps/worker/src/index.ts. Only registered as a
+ * repeatable job if ENABLE_DAILY_DIGEST=true is explicitly set.
+ */
+export const DAILY_DIGEST_QUEUE = "daily-digest";
+
+/**
  * BullMQ requires maxRetriesPerRequest: null on the underlying Redis
  * connection for its blocking commands (used internally for waiting on
  * jobs) to work — omitting it causes BullMQ to throw at startup.

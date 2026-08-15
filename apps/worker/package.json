@@ -11,6 +11,7 @@
   "dependencies": {
     "@job-agent/ats-adapters": "*",
     "@job-agent/browser-agent": "*",
+    "@job-agent/notifications": "*",
     "@job-agent/queue": "*",
     "@job-agent/shared": "*",
     "bullmq": "^6.1.1",

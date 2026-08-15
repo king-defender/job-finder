@@ -98,6 +98,13 @@ export class JobsService {
     return toJob(doc);
   }
 
+  /** Used by analytics to batch-resolve jobs for a set of applications without recomputing match scores. */
+  async getJobsByIds(ids: string[]): Promise<Job[]> {
+    const validIds = ids.filter((id) => isValidObjectId(id));
+    const docs = await this.jobModel.find({ _id: { $in: validIds } });
+    return docs.map(toJob);
+  }
+
   /** Scores are computed fresh on every read, not cached, so they always reflect the current profile. */
   async listJobsRanked(): Promise<JobWithScore[]> {
     const [docs, profile] = await Promise.all([

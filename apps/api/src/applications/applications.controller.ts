@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { Application } from '@job-agent/shared';
+import { Application, AutoApplyStatus } from '@job-agent/shared';
 import { ApplicationsService } from './applications.service';
 import type { ApplicationPatch } from './applications.service';
 import type { CreateApplicationDto } from './dto/create-application.dto';
@@ -18,6 +18,12 @@ export class ApplicationsController {
     return this.applicationsService.listApplications();
   }
 
+  /** Circuit-breaker status — informational only, nothing consumes this to actually submit anything. */
+  @Get('auto-apply/status')
+  getAutoApplyStatus(): Promise<AutoApplyStatus> {
+    return this.applicationsService.getAutoApplyStatus();
+  }
+
   @Get(':id')
   getApplication(@Param('id') id: string): Promise<Application> {
     return this.applicationsService.getApplicationById(id);
@@ -30,5 +36,10 @@ export class ApplicationsController {
     @Body() patch: ApplicationPatch,
   ): Promise<Application> {
     return this.applicationsService.patchApplication(id, patch);
+  }
+
+  @Post(':id/cover-letter')
+  generateCoverLetter(@Param('id') id: string): Promise<Application> {
+    return this.applicationsService.generateCoverLetter(id);
   }
 }
