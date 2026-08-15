@@ -1,4 +1,4 @@
-import type { CandidateProfile } from '@job-agent/shared';
+import type { CandidateProfile, CreateJobInput, CreateJobResult, JobWithScore } from '@job-agent/shared';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -31,4 +31,16 @@ export function uploadResume(file: File): Promise<CandidateProfile> {
     method: 'POST',
     body: formData,
   }).then((res) => handle<CandidateProfile>(res));
+}
+
+export function listJobs(): Promise<JobWithScore[]> {
+  return fetch(`${API_URL}/jobs`).then((res) => handle<JobWithScore[]>(res));
+}
+
+export function createJob(input: CreateJobInput): Promise<CreateJobResult> {
+  return fetch(`${API_URL}/jobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  }).then((res) => handle<CreateJobResult>(res));
 }

@@ -183,20 +183,28 @@ separate code paths:
 
 ## 11. Phased roadmap
 
-### Phase 1 — Candidate Brain (foundation)
+### Phase 1 — Candidate Brain (foundation) — scaffolded, pending real-machine verification
 - Monorepo scaffold, docker-compose (Mongo + Redis)
 - Resume upload + parsing → structured CandidateProfile
 - Profile CRUD UI (skills, experience, preferences)
 - Answer Memory store (schema only, empty at first)
 - **Exit criteria**: you can upload a resume and see an accurate structured profile in the dashboard.
+  Code is in `main`; not yet run against real Docker/Ollama (built on a machine
+  without them) — verify this on the 2nd system before trusting it.
 
-### Phase 2 — Job Intelligence
-- Job ingestion (start with 1 source — likely a job board with a usable API/feed,
-  or manually-pasted JD URLs — before tackling LinkedIn/Naukri scraping)
-- JD parser (AI) → structured requirements
-- Dedup logic
-- Match scoring engine + APPLY/SKIP recommendation
-- **Exit criteria**: pasting/importing a batch of jobs produces ranked, scored recommendations you agree with on spot-check.
+### Phase 2 — Job Intelligence — scaffolded, pending real-machine verification
+- Job ingestion via manually-pasted JD (title/company/location/salary/description
+  form) — LinkedIn/Naukri/Indeed scraping intentionally deferred, per the note
+  below the roadmap
+- JD parser (Ollama) → structured `JobRequirements` (skills/experience/seniority)
+- Dedup logic — deterministic `title+company+location` key, not fuzzy/semantic
+- Match scoring engine (deterministic, not an LLM call — see `job-matcher`) +
+  APPLY/SKIP recommendation, weighted skill 40% / experience 25% / location 20%
+  / salary 15%
+- **Exit criteria**: pasting/importing a batch of jobs produces ranked, scored
+  recommendations you agree with on spot-check. Same caveat as Phase 1 — needs
+  verification against a real Ollama instance, since scoring quality depends
+  entirely on the JD parser's actual output, not just the code compiling.
 
 ### Phase 3 — Browser Application Agent
 - Playwright persistent-context session (manual login, agent reuses session)
