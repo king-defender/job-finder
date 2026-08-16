@@ -30,11 +30,20 @@ export class JobsController {
     if (!body.keywords?.trim()) {
       throw new BadRequestException('keywords string is required for job discovery.');
     }
+    if (body.keywords.length > 500) {
+      throw new BadRequestException('keywords string is too long (max 500 characters).');
+    }
+    if (body.location && body.location.length > 200) {
+      throw new BadRequestException('location string is too long (max 200 characters).');
+    }
+
+    const limit = Math.min(Math.max(body.limit ?? 10, 1), 50);
+
     return this.jobsService.discoverJobs({
-      keywords: body.keywords,
-      location: body.location,
-      remoteOnly: body.remoteOnly,
-      limit: body.limit ?? 10,
+      keywords: body.keywords.trim(),
+      location: body.location?.trim(),
+      remoteOnly: body.remoteOnly ?? false,
+      limit,
     });
   }
 

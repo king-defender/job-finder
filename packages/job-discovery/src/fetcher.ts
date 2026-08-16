@@ -5,20 +5,22 @@ export async function discoverJobs(criteria: JobSearchCriteria): Promise<Discove
   const results: DiscoveredJobRaw[] = [];
 
   try {
-    // 1. Fetch RemoteOK Public Job Feed (JSON API)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     const remoteOkRes = await fetch("https://remoteok.com/api", {
       headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-    });
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
 
     if (remoteOkRes.ok) {
       const data = await remoteOkRes.json();
       if (Array.isArray(data)) {
         const queryLower = keywords.toLowerCase();
-        // Skip first item if it's metadata legal text
         const items = data.slice(1);
 
         for (const item of items) {
-          if (!item.position || !item.company) continue;
+          if (!item || typeof item !== "object" || !item.position || !item.company) continue;
 
           const title = String(item.position);
           const company = String(item.company);
@@ -36,8 +38,8 @@ export async function discoverJobs(criteria: JobSearchCriteria): Promise<Discove
               location: item.location || "Remote",
               remote: true,
               salaryRange: item.salary_min ? `$${item.salary_min} - $${item.salary_max}` : null,
-              description: (item.description || `${title} position at ${company}`).replace(/<[^>]*>?/gm, "").slice(0, 1500),
-              url: item.url || `https://remoteok.com/remote-jobs/${item.id}`,
+              description: String(item.description || `${title} position at ${company}`).replace(/<[^>]*>?/gm, "").slice(0, 1500),
+              url: String(item.url || `https://remoteok.com/remote-jobs/${item.id}`),
               source: "RemoteOK",
             });
           }
@@ -50,7 +52,6 @@ export async function discoverJobs(criteria: JobSearchCriteria): Promise<Discove
     console.warn("[JobDiscovery] Primary feed fetch warning:", (err as Error).message);
   }
 
-  // Fallback / Supplementary mock discovery generator if zero feed matches were returned
   if (results.length === 0) {
     const term = keywords || "Software Engineer";
     const loc = location || (remoteOnly ? "Remote" : "San Francisco, CA");
