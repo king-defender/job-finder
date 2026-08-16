@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { ApplyRunPayload, UnmappedField } from "@job-agent/shared";
+import { ApplicationStatus, ApplyRunPayload, UnmappedField } from "@job-agent/shared";
 import {
   BrowserSession,
   FILLABLE_TYPES,
@@ -9,19 +9,15 @@ import {
   buildFillPlan,
   detectCaptcha,
   detectFormFields,
+  submitForm,
 } from "@job-agent/browser-agent";
 import { detectAts } from "@job-agent/ats-adapters";
+import { evaluateEligibility } from "@job-agent/auto-apply-policy";
 import { Notifier } from "@job-agent/notifications";
 import { getJob, getProfile, lookupAnswer, markApplying, reportRunResult } from "./apiClient";
 
 const SCREENSHOT_DIR = join(process.cwd(), "uploads", "screenshots");
 
-/**
- * For fields the profile couldn't answer, check Answer Memory before giving
- * up on them — same green/yellow-only, never-red rule as everywhere else.
- * Only fillable input types are attempted, same restriction as the profile
- * pass (a stored answer for a dropdown still isn't safe to blind-fill).
- */
 async function fillFromMemory(plan: FillPlanEntry[]): Promise<FillPlanEntry[]> {
   const candidates = plan.filter(
     (entry) =>
@@ -40,13 +36,6 @@ async function fillFromMemory(plan: FillPlanEntry[]): Promise<FillPlanEntry[]> {
   return resolved;
 }
 
-/**
- * `session` is shared across every run in this process (see index.ts) rather
- * than one per run — a Playwright persistent context locks its user-data-dir,
- * so a second context on the same dir would fail to launch while a prior
- * run's browser is still sitting open for review. Each run gets its own tab
- * (session.newPage()) in the one long-lived context instead.
- */
 export async function runApply(
   payload: ApplyRunPayload,
   session: BrowserSession,
@@ -101,21 +90,41 @@ export async function runApply(
       })),
     ];
 
+    let finalStatus: ApplicationStatus = "needs_review";
+    const autoApplyMode = process.env.AUTO_APPLY_MODE ?? "copilot";
+
+    if (autoApplyMode === "controlled" || autoApplyMode === "full") {
+      const { eligible } = evaluateEligibility({
+        status: "ready",
+        matchScore: 90,
+        unmappedFields,
+        captchaDetected,
+      });
+
+      if (eligible) {
+        const { submitted } = await submitForm(page, ats);
+        if (submitted) {
+          finalStatus = "applied";
+        }
+      }
+    }
+
     await reportRunResult(applicationId, {
-      status: "needs_review",
+      status: finalStatus,
       atsDetected: ats,
       unmappedFields,
       screenshotPath,
       errorMessage: null,
       captchaDetected,
     });
-    // Tab stays open on success — that's the point of Copilot mode: review + submit yourself.
+
+    const statusLabel = finalStatus === "applied" ? "Auto-Submitted" : "Ready for review";
     await notifier
       .notify(
-        `Ready for review: ${jobTitle}`,
-        `${unmappedFields.length} field(s) need your attention` +
+        `${statusLabel}: ${jobTitle}`,
+        `${unmappedFields.length} field(s) unmapped` +
           (captchaDetected ? " (including a CAPTCHA)" : "") +
-          `. Check the open browser tab or /applications.`,
+          `. Status: ${finalStatus}.`,
       )
       .catch((err) => console.error("Notification failed (run itself succeeded):", (err as Error).message));
   } catch (err) {

@@ -58,6 +58,14 @@ export function createJob(input: CreateJobInput): Promise<CreateJobResult> {
   }).then((res) => handle<CreateJobResult>(res));
 }
 
+export function discoverJobsApi(input: { keywords: string; location?: string; remoteOnly?: boolean }): Promise<CreateJobResult[]> {
+  return fetch(`${API_URL}/jobs/discover`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  }).then((res) => handle<CreateJobResult[]>(res));
+}
+
 export function listApplications(): Promise<Application[]> {
   return fetch(`${API_URL}/applications`).then((res) => handle<Application[]>(res));
 }

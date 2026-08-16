@@ -3,17 +3,16 @@ import { HydratedDocument } from 'mongoose';
 
 @Schema({ timestamps: false, collection: 'answer_memory' })
 export class AnswerMemoryDocumentClass {
-  @Prop({ required: true, unique: true, index: true })
+  @Prop({ type: String, required: true, unique: true, index: true })
   normalizedQuestion!: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   answer!: string;
 
-  /** Only "green" | "yellow" is ever written here — enforced in the service, not just the type. */
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   classification!: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   lastConfirmedAt!: string;
 }
 

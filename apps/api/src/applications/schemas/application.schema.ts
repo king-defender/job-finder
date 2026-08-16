@@ -3,40 +3,40 @@ import { HydratedDocument, SchemaTypes } from 'mongoose';
 
 @Schema({ timestamps: true, collection: 'applications' })
 export class ApplicationDocumentClass {
-  @Prop({ required: true, index: true })
+  @Prop({ type: String, required: true, index: true })
   jobId!: string;
 
-  @Prop({ default: '' })
+  @Prop({ type: String, default: '' })
   resumeVersionUsed!: string;
 
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   coverLetter!: string | null;
 
-  @Prop({ default: 0 })
+  @Prop({ type: Number, default: 0 })
   matchScore!: number;
 
   @Prop({ type: [SchemaTypes.Mixed], default: [] })
   answers!: Record<string, unknown>[];
 
-  @Prop({ default: 'ready' })
+  @Prop({ type: String, default: 'ready' })
   status!: string;
 
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   notes!: string | null;
 
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   atsDetected!: string | null;
 
   @Prop({ type: [SchemaTypes.Mixed], default: [] })
   unmappedFields!: Record<string, unknown>[];
 
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   screenshotPath!: string | null;
 
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   errorMessage!: string | null;
 
-  @Prop({ default: false })
+  @Prop({ type: Boolean, default: false })
   captchaDetected!: boolean;
 }
 

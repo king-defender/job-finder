@@ -3,43 +3,43 @@ import { HydratedDocument, SchemaTypes } from 'mongoose';
 
 @Schema({ timestamps: false, collection: 'jobs' })
 export class JobDocumentClass {
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   title!: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   company!: string;
 
-  @Prop({ default: '' })
+  @Prop({ type: String, default: '' })
   location!: string;
 
-  @Prop({ default: false })
+  @Prop({ type: Boolean, default: false })
   remote!: boolean;
 
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   salaryRange!: string | null;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   description!: string;
 
   @Prop({ type: SchemaTypes.Mixed, default: null })
   requirements!: Record<string, unknown> | null;
 
-  @Prop({ default: 'manual' })
+  @Prop({ type: String, default: 'manual' })
   source!: string;
 
-  @Prop({ default: '' })
+  @Prop({ type: String, default: '' })
   url!: string;
 
-  @Prop({ default: '' })
+  @Prop({ type: String, default: '' })
   applicationUrl!: string;
 
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   postedDate!: string | null;
 
-  @Prop({ required: true, index: true, unique: true })
+  @Prop({ type: String, required: true, index: true, unique: true })
   dedupKey!: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   discoveredAt!: string;
 }
 

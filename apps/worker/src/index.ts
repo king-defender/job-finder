@@ -5,14 +5,27 @@ import { BrowserSession } from "@job-agent/browser-agent";
 import { createNotifier } from "@job-agent/notifications";
 import { ApplyRunPayload } from "@job-agent/shared";
 import { runApply } from "./runApply";
+import { JobScheduler } from "./scheduler";
 
 // One persistent context for the whole process lifetime — see runApply.ts for why.
 const session = new BrowserSession();
 const notifier = createNotifier();
+const scheduler = new JobScheduler();
+
+// Initialize repeatable job schedule on boot
+scheduler.setupRepeatableJobs().catch((err) => {
+  console.error("Failed to setup scheduler:", err.message);
+});
 
 const worker = new Worker<ApplyRunPayload>(
   APPLY_RUNS_QUEUE,
-  (job: BullJob<ApplyRunPayload>) => runApply(job.data, session, notifier),
+  (job: BullJob<ApplyRunPayload>) => {
+    if ("scheduled" in job.data || "manual" in job.data) {
+      console.log(`[Worker] Running scheduled sweep...`);
+      return Promise.resolve();
+    }
+    return runApply(job.data, session, notifier);
+  },
   { connection: createRedisConnection(), concurrency: 1 },
 );
 

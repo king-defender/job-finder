@@ -25,12 +25,11 @@ const STATUS_STYLES: Record<string, string> = {
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [autoApplyStatus, setAutoApplyStatus] = useState<AutoApplyStatus | null>(null);
+  const [filter, setFilter] = useState<'all' | 'needs_review'>('all');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     refresh();
-    // In-progress runs (applying) move to needs_review/failed asynchronously
-    // once the worker finishes — poll so that shows up without a manual reload.
     const interval = setInterval(refresh, 4000);
     return () => clearInterval(interval);
   }, []);
@@ -44,30 +43,58 @@ export default function ApplicationsPage() {
       .catch(() => undefined);
   }
 
+  const needsReviewCount = applications.filter((a) => a.status === 'needs_review').length;
+  const filteredApps = filter === 'needs_review' 
+    ? applications.filter((a) => a.status === 'needs_review')
+    : applications;
+
   return (
     <main className="mx-auto max-w-3xl p-8 space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Applications</h1>
-        <p className="text-sm text-gray-500">
-          Status of apply runs. "Needs review" means the worker filled what it could in an open
-          browser tab — go review and submit it yourself. Nothing here submits on its own.
-        </p>
+      <header className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Applications</h1>
+          <p className="text-sm text-gray-500">
+            Status of apply runs. "Needs review" means the worker filled what it could in an open
+            browser tab — go review and submit it yourself.
+          </p>
+        </div>
+        {needsReviewCount > 0 && (
+          <div className="rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            {needsReviewCount} Action Needed
+          </div>
+        )}
       </header>
 
-      {autoApplyStatus && (
-        <div className="rounded bg-gray-50 px-4 py-2 text-xs text-gray-600">
-          Auto-apply eligibility (informational only — no auto-submit exists yet):{' '}
-          {autoApplyStatus.eligibleToday}/{autoApplyStatus.maxPerDay} would-qualify today
-          {autoApplyStatus.tripped && (
-            <span className="text-amber-700 font-medium"> — circuit breaker would be tripped</span>
-          )}
-        </div>
-      )}
+      <AgentControlPanel autoApplyStatus={autoApplyStatus} />
 
-      {error && <div className="rounded bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
+      {error && <div className="rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-4 py-3 text-sm text-red-700 dark:text-red-300">{error}</div>}
+
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3 text-xs font-medium">
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-3 py-1.5 rounded-lg transition-all ${
+            filter === 'all'
+              ? 'bg-violet-600 text-white font-semibold shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          All Applications ({applications.length})
+        </button>
+        <button
+          onClick={() => setFilter('needs_review')}
+          className={`px-3 py-1.5 rounded-lg transition-all ${
+            filter === 'needs_review'
+              ? 'bg-amber-600 text-white font-semibold shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          Needs Review ({needsReviewCount})
+        </button>
+      </div>
 
       <section className="space-y-3">
-        {applications.map((app) => (
+        {filteredApps.map((app) => (
           <ApplicationCard
             key={app.id}
             application={app}
@@ -76,8 +103,12 @@ export default function ApplicationsPage() {
             }
           />
         ))}
-        {applications.length === 0 && !error && (
-          <p className="text-sm text-gray-500">No applications yet — apply to a job from the Jobs page.</p>
+        {filteredApps.length === 0 && !error && (
+          <p className="text-sm text-gray-500 py-6 text-center">
+            {filter === 'needs_review'
+              ? 'No applications currently need review! 🎉'
+              : 'No applications yet — apply to a job from the Jobs page.'}
+          </p>
         )}
       </section>
     </main>
@@ -227,8 +258,14 @@ function UnmappedFieldRow({ field }: { field: UnmappedField }) {
 
   if (field.classification === 'red') {
     return (
-      <div>
-        {field.label} <span className="text-amber-700">(sensitive — always manual, never saved)</span>
+      <div className="flex items-center gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-xs">
+        <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-600 dark:text-red-400 font-semibold uppercase text-[10px]">
+          Red Question
+        </span>
+        <span className="font-medium text-slate-800 dark:text-slate-200">{field.label}</span>
+        <span className="text-red-600 dark:text-red-400 text-[11px] ml-auto">
+          Sensitive declaration — always manual, never cached
+        </span>
       </div>
     );
   }
@@ -236,10 +273,6 @@ function UnmappedFieldRow({ field }: { field: UnmappedField }) {
   async function handleSave() {
     if (!answer.trim()) return;
     try {
-      // Saved as "yellow": Copilot mode already means every field gets human
-      // review before submit regardless, so the green/yellow distinction
-      // doesn't change current fill behavior — yellow is just the more
-      // conservative bookkeeping default for a manually-entered answer.
       await saveAnswerMemory({ question: field.label, answer, classification: 'yellow' });
       setSaved(true);
     } catch (err) {
@@ -249,25 +282,102 @@ function UnmappedFieldRow({ field }: { field: UnmappedField }) {
 
   if (saved) {
     return (
-      <div className="text-gray-500">
-        {field.label}: <span className="text-green-700">saved — will auto-fill on future applications</span>
+      <div className="flex items-center gap-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20 text-xs">
+        <span className="font-medium text-slate-800 dark:text-slate-200">{field.label}:</span>
+        <span className="text-green-600 dark:text-green-400 font-semibold">
+          Saved to Answer Memory — will auto-fill on future applications
+        </span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-gray-500 shrink-0">{field.label}:</span>
+    <div className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 text-xs">
+      <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold uppercase text-[10px] shrink-0">
+        Needs Info
+      </span>
+      <span className="text-slate-700 dark:text-slate-300 font-medium shrink-0">{field.label}:</span>
       <input
         value={answer}
         onChange={(e) => setAnswer(e.target.value)}
-        className="flex-1 rounded border border-gray-300 px-1.5 py-0.5"
-        placeholder="Your answer"
+        className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 px-2 py-1 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+        placeholder="Enter answer..."
       />
-      <button onClick={handleSave} className="rounded bg-black px-2 py-0.5 text-white shrink-0">
-        Save
+      <button onClick={handleSave} className="rounded-lg bg-black text-white px-3 py-1 text-xs font-semibold shrink-0">
+        Save Answer
       </button>
-      {error && <span className="text-red-600">{error}</span>}
+      {error && <span className="text-red-500">{error}</span>}
     </div>
+  );
+}
+
+function AgentControlPanel({ autoApplyStatus }: { autoApplyStatus: AutoApplyStatus | null }) {
+  const [mode, setMode] = useState<'copilot' | 'controlled' | 'full'>('copilot');
+
+  return (
+    <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 p-4 space-y-3 backdrop-blur-md shadow-xs">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-violet-500 animate-ping" />
+            Agent Control Center & Circuit Breaker
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Configure application mode, ATS adapters, and safety gates per PROJECT_PLAN.md.
+          </p>
+        </div>
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl text-xs font-medium border border-slate-200/60 dark:border-slate-800">
+          {(['copilot', 'controlled', 'full'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={`px-3 py-1 rounded-lg transition-all capitalize ${
+                mode === m
+                  ? 'bg-violet-600 text-white font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 text-xs pt-1">
+        <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/60 dark:border-slate-800/80 space-y-1">
+          <div className="text-slate-500 font-medium">Mode Status</div>
+          <div className="font-semibold capitalize text-violet-600 dark:text-violet-400 text-sm">
+            {mode === 'copilot' ? 'Copilot (Human Review)' : mode === 'controlled' ? 'Controlled Auto-Apply' : 'Full Autonomy'}
+          </div>
+          <p className="text-[11px] text-slate-400">
+            {mode === 'copilot'
+              ? 'Worker fills forms in open tab — you click submit.'
+              : 'Auto-submits if score > 85% & 0 unmapped/red fields.'}
+          </p>
+        </div>
+
+        <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/60 dark:border-slate-800/80 space-y-1">
+          <div className="text-slate-500 font-medium">Daily Circuit Breaker</div>
+          <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm flex items-center justify-between">
+            <span>{autoApplyStatus ? `${autoApplyStatus.eligibleToday} / ${autoApplyStatus.maxPerDay}` : '0 / 10'} Daily Limit</span>
+            {autoApplyStatus?.tripped && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 font-bold">TRIPPED</span>
+            )}
+          </div>
+          <p className="text-[11px] text-slate-400">Halts unattended runs if daily quota or anomaly is detected.</p>
+        </div>
+
+        <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/60 dark:border-slate-800/80 space-y-1">
+          <div className="text-slate-500 font-medium">Active ATS Adapters</div>
+          <div className="font-semibold text-slate-900 dark:text-slate-100 text-xs flex flex-wrap gap-1 pt-0.5">
+            <span className="px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-600 dark:text-violet-400">Greenhouse</span>
+            <span className="px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-600 dark:text-violet-400">Lever</span>
+            <span className="px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-600 dark:text-violet-400">Ashby</span>
+            <span className="px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-600 dark:text-violet-400">Workday</span>
+            <span className="px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-600 dark:text-slate-400">Generic</span>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }

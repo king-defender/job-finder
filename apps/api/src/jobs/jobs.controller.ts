@@ -1,11 +1,18 @@
-import { BadRequestException, Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Inject, Param, Post } from '@nestjs/common';
 import { Job } from '@job-agent/shared';
 import { JobsService, CreateJobResult, JobWithScore } from './jobs.service';
 import type { CreateJobDto } from './dto/create-job.dto';
 
+export interface DiscoverJobsBody {
+  keywords: string;
+  location?: string;
+  remoteOnly?: boolean;
+  limit?: number;
+}
+
 @Controller('jobs')
 export class JobsController {
-  constructor(private readonly jobsService: JobsService) {}
+  constructor(@Inject(JobsService) private readonly jobsService: JobsService) {}
 
   @Post()
   createJob(@Body() dto: CreateJobDto): Promise<CreateJobResult> {
@@ -16,6 +23,19 @@ export class JobsController {
       throw new BadRequestException('description is too long (max 20000 characters).');
     }
     return this.jobsService.createJob(dto);
+  }
+
+  @Post('discover')
+  discoverJobs(@Body() body: DiscoverJobsBody): Promise<CreateJobResult[]> {
+    if (!body.keywords?.trim()) {
+      throw new BadRequestException('keywords string is required for job discovery.');
+    }
+    return this.jobsService.discoverJobs({
+      keywords: body.keywords,
+      location: body.location,
+      remoteOnly: body.remoteOnly,
+      limit: body.limit ?? 10,
+    });
   }
 
   @Get()

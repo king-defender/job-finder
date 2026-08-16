@@ -3,28 +3,22 @@ import { HydratedDocument } from 'mongoose';
 
 @Schema({ timestamps: { createdAt: true, updatedAt: false }, collection: 'outreach_drafts' })
 export class OutreachDraftDocumentClass {
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   recipientEmail!: string;
 
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   recipientName!: string | null;
 
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   jobId!: string | null;
 
-  @Prop({ default: null })
+  @Prop({ type: String, default: null })
   applicationId!: string | null;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   message!: string;
 
-  /**
-   * "sent" is only ever set by the human clicking a button after they've
-   * actually sent the email themselves (via mailto:, in their own client) —
-   * nothing in this codebase transmits email on the candidate's behalf. See
-   * outreach.controller.ts.
-   */
-  @Prop({ default: 'drafted' })
+  @Prop({ type: String, default: 'drafted' })
   status!: string;
 }
 

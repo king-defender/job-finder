@@ -15,7 +15,7 @@ export interface AutoApplyStatus {
 
 /** What the worker is allowed to update on an Application after a fill run. */
 export interface ApplicationRunResult {
-  status: "needs_review" | "failed";
+  status: "needs_review" | "failed" | "applied";
   atsDetected: string | null;
   unmappedFields: UnmappedField[];
   screenshotPath: string | null;
