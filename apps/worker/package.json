@@ -1,0 +1,23 @@
+{
+  "name": "@job-agent/worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "@job-agent/ats-adapters": "*",
+    "@job-agent/browser-agent": "*",
+    "@job-agent/notifications": "*",
+    "@job-agent/queue": "*",
+    "@job-agent/shared": "*",
+    "bullmq": "^6.1.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

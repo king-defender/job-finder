@@ -1,0 +1,16 @@
+{
+  "name": "@job-agent/job-discovery",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "jest",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@job-agent/shared": "*",
+    "playwright": "^1.48.0"
+  }
+}

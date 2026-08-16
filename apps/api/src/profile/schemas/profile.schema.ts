@@ -3,28 +3,28 @@ import { HydratedDocument, SchemaTypes } from 'mongoose';
 
 @Schema({ timestamps: true, collection: 'profile' })
 export class ProfileDocumentClass {
-  @Prop({ default: '' })
+  @Prop({ type: String, default: '' })
   name!: string;
 
-  @Prop({ default: '' })
+  @Prop({ type: String, default: '' })
   email!: string;
 
-  @Prop({ default: '' })
+  @Prop({ type: String, default: '' })
   phone!: string;
 
-  @Prop({ default: '' })
+  @Prop({ type: String, default: '' })
   location!: string;
 
   @Prop({ type: SchemaTypes.Mixed, default: {} })
   links!: Record<string, string>;
 
-  @Prop({ default: '' })
+  @Prop({ type: String, default: '' })
   currentRole!: string;
 
-  @Prop({ default: '' })
+  @Prop({ type: String, default: '' })
   currentCompany!: string;
 
-  @Prop({ default: 0 })
+  @Prop({ type: Number, default: 0 })
   experienceYears!: number;
 
   @Prop({ type: [String], default: [] })

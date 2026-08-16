@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 import { parseJobDescription } from '@job-agent/jd-parser';
 import { scoreJob } from '@job-agent/job-matcher';
+import { discoverJobs as fetchDiscoveredJobs, JobSearchCriteria } from '@job-agent/job-discovery';
 import { computeDedupKey, CreateJobResult, Job, JobWithScore } from '@job-agent/shared';
 import { ProfileService } from '../profile/profile.service';
 import { JobDocument, JobDocumentClass } from './schemas/job.schema';
@@ -69,8 +70,6 @@ export class JobsService {
         discoveredAt: new Date().toISOString(),
       });
     } catch (err: unknown) {
-      // Handle race condition: another request inserted this dedupKey between our findOne and create.
-      // E11000 is MongoDB's duplicate key error; treat it as a duplicate result.
       if ((err as any)?.code === 11000 && (err as any)?.keyPattern?.dedupKey) {
         const fallback = await this.jobModel.findOne({ dedupKey });
         if (fallback) {
@@ -87,7 +86,48 @@ export class JobsService {
     return { job, score: scoreJob(profile, job), duplicate: false };
   }
 
-  /** Scores are computed fresh on every read, not cached, so they always reflect the current profile. */
+  async discoverJobs(criteria: JobSearchCriteria): Promise<CreateJobResult[]> {
+    const rawJobs = await fetchDiscoveredJobs(criteria);
+    const results: CreateJobResult[] = [];
+
+    for (const raw of rawJobs) {
+      try {
+        const res = await this.createJob({
+          title: raw.title,
+          company: raw.company,
+          location: raw.location,
+          remote: raw.remote,
+          salaryRange: raw.salaryRange,
+          description: raw.description,
+          url: raw.url,
+          source: raw.source,
+        });
+        results.push(res);
+      } catch (err) {
+        console.warn(`[JobsService] Failed to ingest discovered job "${raw.title}":`, (err as Error).message);
+      }
+    }
+
+    return results;
+  }
+
+  async getJobById(id: string): Promise<Job> {
+    if (!isValidObjectId(id)) {
+      throw new NotFoundException(`Job ${id} not found.`);
+    }
+    const doc = await this.jobModel.findById(id);
+    if (!doc) {
+      throw new NotFoundException(`Job ${id} not found.`);
+    }
+    return toJob(doc);
+  }
+
+  async getJobsByIds(ids: string[]): Promise<Job[]> {
+    const validIds = ids.filter((id) => isValidObjectId(id));
+    const docs = await this.jobModel.find({ _id: { $in: validIds } });
+    return docs.map(toJob);
+  }
+
   async listJobsRanked(): Promise<JobWithScore[]> {
     const [docs, profile] = await Promise.all([
       this.jobModel.find(),
