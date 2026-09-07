@@ -8,5 +8,11 @@
     "build": "tsc -p tsconfig.json",
     "test": "jest",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.0"
   }
 }

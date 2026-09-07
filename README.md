@@ -4,8 +4,8 @@ Built on a machine without Docker/Ollama/Playwright's browser binaries;
 intended to actually run on your 2nd system. Full architecture and roadmap:
 [PROJECT_PLAN.md](./PROJECT_PLAN.md).
 
-This Phase 3 work is on branch `phase-3-browser-agent` (not yet merged to
-`main`) — see [Branches](#branches) below.
+Phases 1-3 are all merged into `main` (PR #2) — there's no separate branch to
+check out anymore, see [Branches](#branches) below.
 
 ## What's here
 
@@ -28,7 +28,6 @@ This Phase 3 work is on branch `phase-3-browser-agent` (not yet merged to
    ```
    git clone https://github.com/king-defender/job-finder.git
    cd job-finder
-   git checkout phase-3-browser-agent
    ```
 2. **Start infra**
    ```
@@ -76,17 +75,33 @@ This Phase 3 work is on branch `phase-3-browser-agent` (not yet merged to
     under "Needs your input" yourself, and submit it — the agent never submits
     on its own. (Phase 3 exit criteria.)
 
-Everything here compiles and builds cleanly, but step 10 in particular is
-genuinely unverified — this branch was written on a machine without
-Playwright's browser binaries installed, so the DOM-walk field detection and
-fill logic have never been run against a live page of any kind. Expect the
-label-matching in `packages/browser-agent/src/classify.ts` to need real-world
-tuning once you see what an actual ATS page's markup looks like.
+Every package and app typechecks, builds, and its test suite passes clean on
+`main` (re-verified after a full reinstall - see [Testing](#testing) below).
+Step 10 is still genuinely unverified, and for the same reason as before:
+this machine still has no Playwright browser binaries installed, so the
+DOM-walk field detection and fill logic have never been run against a live
+page of any kind. Expect the label-matching in
+`packages/browser-agent/src/classify.ts` to need real-world tuning once you
+see what an actual ATS page's markup looks like.
+
+## Testing
+
+```
+npm test --workspaces --if-present     # from repo root
+```
+
+5 packages have real test suites (`shared`, `ats-adapters`, `auto-apply-policy`,
+`job-discovery`, `job-matcher`) - all pass. `job-discovery`'s tests hit the
+real RemoteOK API rather than mocking it (no API key needed, it's public),
+including a case that used to matter a lot: a search with zero real matches
+used to silently fabricate two fake job postings (invented companies,
+non-resolving URLs) that got saved into Mongo indistinguishable from real
+listings - fixed to return an honest empty list instead, with a regression
+test covering it.
 
 ## Branches
 
-- `main` — Phase 1 + 2, verified-buildable
-- `phase-3-browser-agent` — this work; merge to `main` once verified per step 10 above
+- `main` — Phase 1 + 2 + 3, fully merged, verified-buildable and tested
 
 ## Pushing changes back
 

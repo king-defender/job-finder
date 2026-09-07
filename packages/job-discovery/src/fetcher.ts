@@ -52,32 +52,12 @@ export async function discoverJobs(criteria: JobSearchCriteria): Promise<Discove
     console.warn("[JobDiscovery] Primary feed fetch warning:", (err as Error).message);
   }
 
-  if (results.length === 0) {
-    const term = keywords || "Software Engineer";
-    const loc = location || (remoteOnly ? "Remote" : "San Francisco, CA");
-    
-    results.push({
-      title: `Senior ${term}`,
-      company: "Acme Cloud Technologies",
-      location: loc,
-      remote: true,
-      salaryRange: "$140,000 - $180,000",
-      description: `We are seeking an experienced Senior ${term} to design, build, and scale high-throughput web applications and microservices. Require proficiency in React, Node.js, TypeScript, and cloud architecture.`,
-      url: "https://greenhouse.io/example-job-posting-acme",
-      source: "Automated Search",
-    });
-
-    results.push({
-      title: `${term} Lead`,
-      company: "Vanguard Systems",
-      location: loc,
-      remote: remoteOnly,
-      salaryRange: "$150,000 - $190,000",
-      description: `Looking for a talented ${term} Lead to drive engineering initiatives, mentor developers, and architect distributed backend services using Node.js, MongoDB, and Redis.`,
-      url: "https://jobs.lever.co/vanguard/example-job",
-      source: "Automated Search",
-    });
-  }
-
+  // No synthetic fallback here on purpose: this result gets persisted straight into Mongo
+  // as real Job documents (see JobsService.discoverJobs), indistinguishable from genuine
+  // listings except for a "source" string field nothing else in the app treats specially.
+  // A previous version filled zero real matches with two fabricated postings (invented
+  // companies, non-resolving URLs) - exactly the "fake content presented as real" failure
+  // mode this fetch is supposed to protect against. Zero real matches means zero results,
+  // full stop; the caller decides what "no jobs found" should look like to the user.
   return results.slice(0, limit);
 }
